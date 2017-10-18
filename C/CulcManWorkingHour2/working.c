@@ -3,15 +3,15 @@
 int split_count;
 struct tm tm_struct;
 int year, month, day, hour, minute, dayStride;
-time_t today_tm;
-time_t atFive;
-time_t atEight;
-time_t atSixTeen;
-time_t atTwentyTwo;
-time_t atTwentyFour;
-time_t atTwentyNine;
+time_t static today_tm;
+time_t static atFive;
+time_t static atOpeningTime;
+time_t static atClosingTime;
+time_t static atTwentyTwo;
+time_t static atTwentyFour;
+time_t static atTwentyNine;
 
-int todayDate() {
+int targetDate() {
 	return day;
 }
 
@@ -39,15 +39,15 @@ time_t isOvertimeWorking(WorkHours *wh, time_t diff) {
 	time_t overtime = (time_t)0;
 
 	//すでに超えている場合
-	if (daily > DAIRY_LEGAL_WORKING_HOURS || weekly > WEEKLY_LEGAL_WORKING_HOURS) {
+	if (daily > DAIRY_LEGAL_WORKING_HOUR_SEC || weekly > WEEKLY_LEGAL_WORKING_HOUR_SEC) {
 		overtime = diff;
 	}
 	else {
 		daily += diff;
 		weekly += diff;
 		//この時間で超えた場合
-		if (daily > DAIRY_LEGAL_WORKING_HOURS || weekly > WEEKLY_LEGAL_WORKING_HOURS) {
-			overtime = (daily - DAIRY_LEGAL_WORKING_HOURS) < (weekly - WEEKLY_LEGAL_WORKING_HOURS) ? (weekly - WEEKLY_LEGAL_WORKING_HOURS) : (daily - DAIRY_LEGAL_WORKING_HOURS);
+		if (daily > DAIRY_LEGAL_WORKING_HOUR_SEC || weekly > WEEKLY_LEGAL_WORKING_HOUR_SEC) {
+			overtime = (daily - DAIRY_LEGAL_WORKING_HOUR_SEC) < (weekly - WEEKLY_LEGAL_WORKING_HOUR_SEC) ? (weekly - WEEKLY_LEGAL_WORKING_HOUR_SEC) : (daily - DAIRY_LEGAL_WORKING_HOUR_SEC);
 		}
 	}
 
@@ -56,7 +56,7 @@ time_t isOvertimeWorking(WorkHours *wh, time_t diff) {
 
 //5-8{法定内/法定外}/{所定休日/法定休日}
 void checkMorning(WorkHours *wh, time_t s, time_t e) {
-	// printf("checkMorning(%d to %d)\n", (localtime(&s))->tm_hour, (localtime(&e))->tm_hour);
+	// printf("checkMorning(%d to %d)\n", (localtime(&s))->tm_HOUR_SEC, (localtime(&e))->tm_HOUR_SEC);
 	int wd = wh->weekdayNum;
 	time_t diff = difftime(e, s);
 	time_t overtime;
@@ -84,7 +84,7 @@ void checkMorning(WorkHours *wh, time_t s, time_t e) {
 
 //8-16{所定/法定外}/{所定休日/法定休日}
 void checkDaytime(WorkHours *wh, time_t s, time_t e) {
-	// printf("checkDaytime(%d to %d)\n", (localtime(&s))->tm_hour, (localtime(&e))->tm_hour);
+	// printf("checkDaytime(%d to %d)\n", (localtime(&s))->tm_HOUR_SEC, (localtime(&e))->tm_HOUR_SEC);
 	int wd = wh->weekdayNum;
 	time_t diff = difftime(e, s);
 	time_t overtime;
@@ -113,7 +113,7 @@ void checkDaytime(WorkHours *wh, time_t s, time_t e) {
 
 //17-22{法定内/法定外}/{所定休日/法定休日}
 void checkNight(WorkHours *wh, time_t s, time_t e) {
-	// printf("checkNight(%d to %d)\n", (localtime(&s))->tm_hour, (localtime(&e))->tm_hour);
+	// printf("checkNight(%d to %d)\n", (localtime(&s))->tm_HOUR_SEC, (localtime(&e))->tm_HOUR_SEC);
 	int wd = wh->weekdayNum;
 	time_t diff = difftime(e, s);
 	time_t overtime;
@@ -141,7 +141,7 @@ void checkNight(WorkHours *wh, time_t s, time_t e) {
 
 //22-24{法定内/法定外}/{所定休日/法定休日} +{深夜}
 void checkLateNight(WorkHours *wh, time_t s, time_t e) {
-	// printf("checkLateNight(%d to %d)\n", (localtime(&s))->tm_hour, (localtime(&e))->tm_hour);
+	// printf("checkLateNight(%d to %d)\n", (localtime(&s))->tm_HOUR_SEC, (localtime(&e))->tm_HOUR_SEC);
 	int wd = wh->weekdayNum;
 	time_t diff = difftime(e, s);
 	time_t overtime;
@@ -170,7 +170,7 @@ void checkLateNight(WorkHours *wh, time_t s, time_t e) {
 
 //24-29<<翌日判定>>{法定内/法定外}/{所定休日/法定休日} +{深夜}
 void checkMidnight(WorkHours *wh, time_t s, time_t e) {
-	// printf("checkMidnight(%d to %d)\n", (localtime(&s))->tm_hour, (localtime(&e))->tm_hour);
+	// printf("checkMidnight(%d to %d)\n", (localtime(&s))->tm_HOUR_SEC, (localtime(&e))->tm_HOUR_SEC);
 	int wd = wh->tmorrowWeekdayNum;
 	time_t diff = difftime(e, s);
 	time_t overtime;
@@ -224,7 +224,7 @@ int initDailyWorkHoursStruct(char *in, WorkHours *daily) {
 	daily->yearMonthDay = splited[0];
 	if (split_count < 1) return 2;
 	for (j=1; j<split_count+1; j++) {
-		daily->workTime[j-1] = splited[j];
+		daily->workPeriod[j-1] = splited[j];
 	}
 
 	// 曜日算出関数を利用して、Weekday NumberをweekdayNumに入れる
@@ -238,18 +238,18 @@ int initDailyWorkHoursStruct(char *in, WorkHours *daily) {
 	tm_struct.tm_year = year - 1900;
 	tm_struct.tm_mon = month - 1;
 	tm_struct.tm_mday = day;
-	tm_struct.tm_hour = 0;
+	tm_struct.tm_HOUR_SEC = 0;
 	tm_struct.tm_min = 0;
 
 	if ((today_tm = mktime(&tm_struct)) == (time_t)-1)
 		return 2;
 
-	atFive = today_tm + FIVE_HOUR;
-	atEight = today_tm + EIGHT_HOUR;
-	atSixTeen = today_tm + SIXTEEN_HOUR;
-	atTwentyTwo = today_tm + TWENTY_TWO_HOUR;
-	atTwentyFour = today_tm + TWENTY_FOUR_HOUR;
-	atTwentyNine = today_tm + TWENTY_NINE_HOUR;
+	atFive = today_tm + FIVE_HOUR_SEC;
+	atOpeningTime = today_tm + EIGHT_HOUR_SEC;
+	atClosingTime = today_tm + SIXTEEN_HOUR_SEC;
+	atTwentyTwo = today_tm + TWENTY_TWO_HOUR_SEC;
+	atTwentyFour = today_tm + TWENTY_FOUR_HOUR_SEC;
+	atTwentyNine = today_tm + TWENTY_NINE_HOUR_SEC;
 
 	daily->weekdayNum = subZeller(today_tm);
 	daily->tmorrowWeekdayNum = subZeller(today_tm + ONE_DAY);
@@ -273,9 +273,9 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 	int j;
 	for (j=0; j<split_count; j++) {
 		// 時刻を Time型 に変換する
-		char *worktime = (char *)malloc(12);
-		strcpy(worktime, daily->workTime[j]);
-		split(worktime, "-", sewt);
+		char *workPeriod = (char *)malloc(12);
+		strcpy(workPeriod, daily->workPeriod[j]);
+		split(workPeriod, "-", sewt);
 		char *swt = (char *)malloc(6);
 		char *ewt = (char *)malloc(6);
 		strcpy(swt, sewt[0]);
@@ -292,7 +292,7 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 			hour -= 24;
 		}
 		tm_struct.tm_mday = day + dayStride;
-		tm_struct.tm_hour = hour;
+		tm_struct.tm_HOUR_SEC = hour;
 		tm_struct.tm_min = minute;
 		if ((start_tm = mktime(&tm_struct)) == (time_t)-1)
 			return 2;
@@ -306,7 +306,7 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 			hour -= 24;
 		}
 		tm_struct.tm_mday = day + dayStride;
-		tm_struct.tm_hour = hour;
+		tm_struct.tm_HOUR_SEC = hour;
 		tm_struct.tm_min = minute;
 		if ((end_tm = mktime(&tm_struct)) == (time_t)-1)
 			return 2;
@@ -319,66 +319,66 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 			return 1;
 		}
 		// 労働時間数を計算する
-		if(start_tm < atEight) {
-			printf("start < atEight, ");
-			if (end_tm <= atEight) {
-				printf("end <= atEight\n");//Moring(s-e)
+		if(start_tm < atOpeningTime) {
+			printf("start < atOpeningTime, ");
+			if (end_tm <= atOpeningTime) {
+				printf("end <= atOpeningTime\n");//Moring(s-e)
 				checkMorning(daily, start_tm, end_tm);
 			}
-			else if (end_tm <= atSixTeen) {
-				printf("atEight < end <= atSixTeen\n");//Morning(s-8)/Daytime(8-e)
-				checkMorning(daily, start_tm, atEight);
-				checkDaytime(daily, atEight, end_tm);
+			else if (end_tm <= atClosingTime) {
+				printf("atOpeningTime < end <= atClosingTime\n");//Morning(s-8)/Daytime(8-e)
+				checkMorning(daily, start_tm, atOpeningTime);
+				checkDaytime(daily, atOpeningTime, end_tm);
 			}
 			else if (end_tm <= atTwentyTwo) {
-				printf("atSixTeen < end <= atTwentyTwo \n");//Morning(s-8)/Daytime(8-16)/Night(16-e)
-				checkMorning(daily, start_tm, atEight);
-				checkDaytime(daily, atEight, atSixTeen);
-				checkNight(daily, atSixTeen, end_tm);
+				printf("atClosingTime < end <= atTwentyTwo \n");//Morning(s-8)/Daytime(8-16)/Night(16-e)
+				checkMorning(daily, start_tm, atOpeningTime);
+				checkDaytime(daily, atOpeningTime, atClosingTime);
+				checkNight(daily, atClosingTime, end_tm);
 			}
 			else if (end_tm <= atTwentyFour) {
 				printf("atTwentyTwo < end \n");//Morning(s-8)/Daytime(8-16)/Night(16-22)/LateNight(22-e)
-				checkMorning(daily, start_tm, atEight);
-				checkDaytime(daily, atEight, atSixTeen);
-				checkNight(daily, atSixTeen, atTwentyTwo);
+				checkMorning(daily, start_tm, atOpeningTime);
+				checkDaytime(daily, atOpeningTime, atClosingTime);
+				checkNight(daily, atClosingTime, atTwentyTwo);
 				checkLateNight(daily, atTwentyTwo, end_tm);
 			}
 			else if (atTwentyFour < end_tm) {
 				printf("atTwentyFour < end \n");//Morning(s-8)/Daytime(8-16)/Night(16-22)/LateNight(22-24)/Midnight(24-e)
-				checkMorning(daily, start_tm, atEight);
-				checkDaytime(daily, atEight, atSixTeen);
-				checkNight(daily, atSixTeen, atTwentyTwo);
+				checkMorning(daily, start_tm, atOpeningTime);
+				checkDaytime(daily, atOpeningTime, atClosingTime);
+				checkNight(daily, atClosingTime, atTwentyTwo);
 				checkLateNight(daily, atTwentyTwo, atTwentyFour);
 				checkMidnight(daily, atTwentyFour, end_tm);
 			}
 		}
-		else if (atEight <= start_tm && start_tm < atSixTeen) {
-			printf("atEight <= start < atSixTeen, ");
-			if (end_tm <= atSixTeen) {
-				printf("end <= atSixTeen\n");//Daytime(s-e)
+		else if (atOpeningTime <= start_tm && start_tm < atClosingTime) {
+			printf("atOpeningTime <= start < atClosingTime, ");
+			if (end_tm <= atClosingTime) {
+				printf("end <= atClosingTime\n");//Daytime(s-e)
 				checkDaytime(daily, start_tm, end_tm);
 			}
 			else if (end_tm <= atTwentyTwo) {
-				printf("atSixTeen < end <= atTwentyTwo \n");//Daytime(s-16)/Night(16-e)
-				checkDaytime(daily, start_tm, atSixTeen);
-				checkNight(daily, atSixTeen, end_tm);
+				printf("atClosingTime < end <= atTwentyTwo \n");//Daytime(s-16)/Night(16-e)
+				checkDaytime(daily, start_tm, atClosingTime);
+				checkNight(daily, atClosingTime, end_tm);
 			}
 			else if (end_tm <= atTwentyFour) {
 				printf("atTwentyTwo < end \n");//Daytime(s-16)/Night(16-22)/LateNight(22-e)
-				checkDaytime(daily, start_tm, atSixTeen);
-				checkNight(daily, atSixTeen, atTwentyTwo);
+				checkDaytime(daily, start_tm, atClosingTime);
+				checkNight(daily, atClosingTime, atTwentyTwo);
 				checkLateNight(daily, atTwentyTwo, end_tm);
 			}
 			else if (atTwentyFour < end_tm) {
 				printf("atTwentyFour < end \n");//Daytime(s-16)/Night(16-22)/LateNight(22-24)/Midnight(24-e)
-				checkDaytime(daily, start_tm, atSixTeen);
-				checkNight(daily, atSixTeen, atTwentyTwo);
+				checkDaytime(daily, start_tm, atClosingTime);
+				checkNight(daily, atClosingTime, atTwentyTwo);
 				checkLateNight(daily, atTwentyTwo, atTwentyFour);
 				checkMidnight(daily, atTwentyFour, end_tm);
 			}
 		}
-		else if (atSixTeen <= start_tm && start_tm < atTwentyTwo) {
-			printf("atSixTeen <= start < atTwentyTwo, ");
+		else if (atClosingTime <= start_tm && start_tm < atTwentyTwo) {
+			printf("atClosingTime <= start < atTwentyTwo, ");
 			if (end_tm <= atTwentyTwo) {
 				printf("end <= atTwentyTwo \n");//Night(s-e)
 				checkNight(daily, start_tm, end_tm);
@@ -411,7 +411,7 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 			printf("atTwentyFour < start\n");//Midnight(s-e)
 			checkMidnight(daily, start_tm, end_tm);
 		}
-		free(worktime);
+		free(workPeriod);
 		free(swt);
 		free(ewt);
 	}
@@ -419,7 +419,7 @@ int culcWorkHours(WorkHours *total, WorkHours *daily) {
 }
 
 time_t checkWeeklyWH(WorkHours *daily, int lastWorkDay, int lastWorkWeekday, time_t temp_weeklyWH) {
-	if ((todayDate() > lastWorkDay) && (daily->weekdayNum < lastWorkWeekday)) return (time_t)0;
+	if ((targetDate() > lastWorkDay) && (daily->weekdayNum < lastWorkWeekday)) return (time_t)0;
 	return temp_weeklyWH;
 }
 

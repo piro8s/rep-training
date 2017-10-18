@@ -4,16 +4,16 @@
 #include "calender_ex.h"
 #include "time_ex.h"
 
-#define SUCCESS_CHR 48
-#define FAIL_CHR 49
+#define SUCCESS_CHR 48 //character code: '0'
+#define FAIL_CHR 49 //character code: '1'
 
-#define YEAR_MONTH_LEN 7
-#define WORK_HOURS_LEN 60
+#define TARGET_YEAR_MONTH_CHR_LEN 7
+#define WORKING_HOUR_PERIOD_CHR_LEN 60
 
-#define DAIRY_LEGAL_WORKING_HOURS 28800 //sec = 8 Hours
-#define WEEKLY_LEGAL_WORKING_HOURS 144000 //sec = 40 Hours
-
+#define DAIRY_LEGAL_WORKING_HOUR_SEC 28800 //sec = 8 Hours
+#define WEEKLY_LEGAL_WORKING_HOUR_SEC 144000 //sec = 40 Hours
 #define MAX_DAYS 37
+#define MAX_BREAK_TIMES 4
 
 /**
 * The working hours structure.
@@ -21,7 +21,7 @@
 * @member char *	yearMonthDay		Working date: YYYY/MM/DD
 * @member int 		weekdayNum			Weekday number of today
 * @member int 		tmorrowWeekdayNum	Weekday number of tmorrow
-* @member char *[]	workTime			Array of working hours by period
+* @member char *[]	workPeriod			Array of working hours by period
 * @member time_t 	dailyWH				Daily Statutory Working Hours [sec]
 * @member time_t 	weeklyWH			Weekly Statutory Working Hours [sec]
 * @member time_t 	nomalWH				Normal Working Hours [sec]
@@ -32,11 +32,12 @@
 * @member time_t 	legalHolydayWH		Legal Holiday Working Hours [sec]
 */
 typedef struct workhours {
-	char *yearMonth;
-	char *yearMonthDay;
+	time_t today;		//新しく追加しようとしている。yearMonthDayはこちらに変更
+	char *yearMonth;	//ターゲット年月。yearMonthDayのyear-monthと一致しているかを判断する -> int型の201710に変更(yyyy*100+mm)
+	char *yearMonthDay;	//労働年月日。yearMonthのyear-monthと一致しているかを判断する -> time_t todayに変更(yyyy*100+mmはcalender_exの中のgetYearMonthを使う)
 	int weekdayNum;
 	int tmorrowWeekdayNum;
-	char *workTime[5];
+	char *workPeriod[MAX_BREAK_TIMES];	//労働年月日・労働時間ピリオド
 
 	time_t dailyWH;
 	time_t weeklyWH;
@@ -54,17 +55,23 @@ extern struct tm tm_struct;
 extern int year, month, day, hour, minute, dayStride;
 extern time_t today_tm;
 extern time_t atFive;
-extern time_t atEight;
-extern time_t atSixTeen;
+extern time_t atOpeningTime;
+extern time_t atClosingTime;
 extern time_t atTwentyTwo;
 extern time_t atTwentyFour;
 extern time_t atTwentyNine;
 
 /**
- * Return the date of today.
- * @return int		The date of today.
+ * Get how many times which target row string is splited with white space.
+ * @return int 		The split count.
  */
-int todayDate();
+int splitCount();
+
+/**
+ * Get the target date.
+ * @return int		The target date.
+ */
+int targetDate();
 
 /**
  * Return the working hours[sec] of WorkHours.

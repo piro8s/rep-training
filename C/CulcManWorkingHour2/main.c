@@ -1,8 +1,8 @@
 #include "working.h"
 
 int main() {
-	char *in_ym = (char *)malloc(YEAR_MONTH_LEN+1);
-	char *in_wh = (char *)malloc(WORK_HOURS_LEN+1);
+	char *in_ym = (char *)malloc(TARGET_YEAR_MONTH_CHR_LEN+1);
+	char *in_wh = (char *)malloc(WORKING_HOUR_PERIOD_CHR_LEN+1);
 	WorkHours *total = (WorkHours *)malloc(sizeof(WorkHours));
 	int i=0, j=0;
 
@@ -25,7 +25,7 @@ int main() {
 		else if (initWH == 2) goto END_OF_PROGRAM;
 		else {
 			temp_weeklyWH = checkWeeklyWH(daily, lastWorkDay, lastWorkWeekday, temp_weeklyWH);
-			lastWorkDay = todayDate();
+			lastWorkDay = targetDate();
 			lastWorkWeekday = weekdayNumOf(daily);
 			daily->weeklyWH = temp_weeklyWH;
 

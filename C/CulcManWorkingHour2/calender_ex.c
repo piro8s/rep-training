@@ -1,5 +1,27 @@
 #include "calender_ex.h"
 
+int getDate(time_t t) {
+	return (localtime($t))->tm_mday;
+}
+
+int getMonth(time_t) {
+	return (localtime($t))->tm_mon +1;
+}
+
+int getYear(time_t); {
+	return (localtime($t))->tm_year+1900;
+}
+
+int getYearMonth(time_t) {
+	return (((localtime($t))->tm_year+1900)*100 + (localtime($t))->tm_mon +1);
+}
+
+int subZeller(time_t t) {
+	int weekday = (localtime(&t))->tm_wday;
+	weekday = isNationalHoloday(t);
+	return weekday;
+}
+
 int isNationalHoloday(time_t t) {
 	struct tm *tm;
 	tm = localtime(&t);
@@ -50,10 +72,4 @@ int isNationalHoloday(time_t t) {
 	}
 
 	return wd;
-}
-
-int subZeller(time_t t) {
-	int weekday = (localtime(&t))->tm_wday;
-	weekday = isNationalHoloday(t);
-	return weekday;
 }
